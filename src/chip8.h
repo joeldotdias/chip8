@@ -8,6 +8,12 @@
 
 #include "common.h"
 
+#define op_X(op) ((op & 0x0F00) >> 8)
+#define op_Y(op) ((op & 0x00F0) >> 4)
+#define op_N(op) (op & 0x000F)
+#define op_NN(op) (op & 0x00FF)
+#define op_NNN(op) (op & 0x0FFF)
+
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
 #define NUM_GPRS 16
@@ -20,6 +26,9 @@
 #define PROG_END_ADDR 0x1000
 #define PROG_REGION_SIZE (PROG_END_ADDR - PROG_START_ADDR)
 
+#define c8_malloc(size) c8_malloc(size, __FILE__, __LINE__)
+#define c8_calloc(nmemb, size) c8_calloc(nmemb, size, __FILE__, __LINE__)
+
 typedef struct Chip8 {
     uint8_t ram[RAM_SIZE]; // 4k of memory
     uint16_t stack[STACK_SIZE];
@@ -28,7 +37,6 @@ typedef struct Chip8 {
     uint8_t V[NUM_GPRS]; // GPR -> [V0 - V14], Carry -> V15
     uint16_t I;          // index register
     uint16_t pc;         // program counter
-    uint16_t opcode;     // current opcode
 
     uint8_t delay_timer;
     uint8_t sound_timer;
@@ -38,6 +46,8 @@ typedef struct Chip8 {
 
     // keypad
     bool keypad[NUM_KEYS];
+
+    bool needs_draw;
 } Chip8;
 
 static const uint8_t FONTSET[FONTSET_SIZE] = {
@@ -80,8 +90,6 @@ static const uint8_t KEYMAP[NUM_KEYS] = {
 
 Chip8 *chip8_init();
 void chip8_load_rom(Chip8 *chip8, const char *rom_path);
-
-#define c8_malloc(size) c8_malloc(size, __FILE__, __LINE__)
-#define c8_calloc(nmemb, size) c8_calloc(nmemb, size, __FILE__, __LINE__)
+void c8_exec_instruction(Chip8 *chip8, bool dbg);
 
 #endif

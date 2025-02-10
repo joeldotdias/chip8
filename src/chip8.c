@@ -11,6 +11,9 @@ Chip8 *chip8_init() {
         chip8->keypad[i] = false;
     }
 
+    chip8->pc = PROG_START_ADDR;
+    chip8->needs_draw = false;
+
     return chip8;
 }
 
@@ -43,4 +46,86 @@ void chip8_load_rom(Chip8 *chip8, const char *rom_path) {
 
     fclose(rom);
     free(rom_buffer);
+}
+
+void c8_exec_instruction(Chip8 *chip8, bool dbg) {
+    uint16_t opcode = (chip8->ram[chip8->pc] << 8) | chip8->ram[chip8->pc + 1];
+
+    switch(opcode & 0xF000) {
+        case 0x0000:
+            switch(opcode & 0x00FF) {
+                case 0x00E0:
+                    INFO("CLEAR SCREEN 0x00E0");
+                    memset(chip8->screen, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+                    chip8->needs_draw = true;
+                    chip8->pc += 2;
+                    break;
+
+                default:
+                    UNIMPLEMENTED("Instruction 0x%04x", opcode);
+            }
+            break;
+
+        case 0x1000:
+            INFO("JUMP 0x1NNN");
+            chip8->pc = op_NNN(opcode);
+            break;
+
+        case 0x6000:
+            {
+                INFO("LOAD VX reg immediate 0x6XNN");
+                uint8_t target_reg = op_X(opcode);
+                chip8->V[target_reg] = op_NN(opcode);
+                chip8->pc += 2;
+                break;
+            }
+
+        case 0x7000:
+            {
+                INFO("ADD Vx reg immediate 0x7XNN");
+                uint8_t target_reg = op_X(opcode);
+                chip8->V[target_reg] += op_NN(opcode);
+                chip8->pc += 2;
+                break;
+            }
+
+        case 0xA000:
+            INFO("LDI 0xANNN");
+            chip8->I = op_NNN(opcode);
+            chip8->pc += 2;
+            break;
+
+        case 0xD000:
+            INFO("DRAW SPRITE 0xDXYN");
+            uint8_t width = 8;
+            uint8_t height = op_N(opcode);
+            uint8_t x_coord = chip8->V[op_X(opcode)];
+            uint8_t y_coord = chip8->V[op_Y(opcode)];
+            uint8_t sprite_row;
+
+            // set colission flag
+            chip8->V[0xF] = 0;
+
+            // TODO: add checks to ensure x & y are within bounds
+            for(uint8_t curr_y = 0; curr_y < height; curr_y++) {
+                sprite_row = chip8->ram[chip8->I + curr_y];
+                for(uint8_t curr_x = 0; curr_x < width; curr_x++) {
+                    if((sprite_row & (0x80 >> curr_x)) != 0) {
+                        uint16_t draw_at = (x_coord + curr_x + ((y_coord + curr_y) * 64));
+                        if(chip8->screen[draw_at] == 1) {
+                            chip8->V[0xF] = 1;
+                        }
+                        chip8->screen[draw_at] ^= 1;
+                    }
+                }
+            }
+
+            chip8->needs_draw = true;
+            chip8->pc += 2;
+
+            break;
+
+        default:
+            UNIMPLEMENTED("Instruction 0x%04x", opcode);
+    }
 }

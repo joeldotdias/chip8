@@ -25,7 +25,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o2 -o $@ $<
 
 dbg: $(TARGET)
-	./$(TARGET) ./test-roms/test_opcode.ch8 DEBUG
+	./$(TARGET) ./test-roms/ibmlogo.ch8 DEBUG
 
 csa:
 	$(CSA) $(CC) $(CFLAGS) $(SOURCES)
