@@ -2,9 +2,9 @@
 #define CHIP8_H
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_video.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "common.h"
 
@@ -14,7 +14,7 @@
 #define op_NN(op) (op & 0x00FF)
 #define op_NNN(op) (op & 0x0FFF)
 
-#define RAM_SIZE 4096
+#define MEM_SIZE 4096
 #define STACK_SIZE 16
 #define NUM_GPRS 16
 #define SCREEN_WIDTH 64
@@ -30,12 +30,13 @@
 #define c8_calloc(nmemb, size) c8_calloc(nmemb, size, __FILE__, __LINE__)
 
 typedef struct Chip8 {
-    uint8_t ram[RAM_SIZE]; // 4k of memory
+    uint8_t ram[MEM_SIZE]; // 4k of memory
     uint16_t stack[STACK_SIZE];
 
     // registers
-    uint8_t V[NUM_GPRS]; // GPR -> [V0 - V14], Carry -> V15
+    uint8_t V[NUM_GPRS]; // GPR -> [V0 - V14], Flag reg -> V15
     uint16_t I;          // index register
+    uint16_t sp;         // stack pointer
     uint16_t pc;         // program counter
 
     uint8_t delay_timer;
@@ -89,7 +90,7 @@ static const uint8_t KEYMAP[NUM_KEYS] = {
 };
 
 Chip8 *chip8_init();
-void chip8_load_rom(Chip8 *chip8, const char *rom_path);
+void c8_load_rom(Chip8 *chip8, const char *rom_path);
 void c8_exec_instruction(Chip8 *chip8, bool dbg);
 
 #endif
