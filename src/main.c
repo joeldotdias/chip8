@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     uint32_t pixels[SCREEN_WIDTH * SCREEN_HEIGHT];
     memset(pixels, 0, sizeof(pixels));
 
-    if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
         exit(1);
     }
@@ -51,11 +51,11 @@ int main(int argc, char **argv) {
     SDL_Event e;
     bool quit = false;
     struct timespec ts = {0, 1200 * 1000};
-    uint8_t c8_cpu_cycles = 0;
 
     while(!quit) {
         c8_exec_instruction(chip8, dbg);
-        c8_cpu_cycles++;
+        chip8->delay_cycles++;
+        chip8->sound_cycles++;
 
         if(chip8->needs_draw) {
             for(int i = 0; i < 2048; i++) {
@@ -71,17 +71,9 @@ int main(int argc, char **argv) {
             chip8->needs_draw = false;
         }
 
-        // makes up for the difference betweeen timer decr (60 Hz)
+        // makes up for the difference betweeen timer decr rate (60 Hz)
         // and chip8 cpu clock speed (540 Hz)
-        if(c8_cpu_cycles == 9) {
-            if(chip8->delay_timer > 0) {
-                chip8->delay_timer--;
-            }
-            if(chip8->sound_timer > 0) {
-                chip8->sound_timer--;
-            }
-            c8_cpu_cycles = 0;
-        }
+        c8_tick_timers(chip8);
 
         while(SDL_PollEvent(&e)) {
             if(e.type == SDL_KEYDOWN) {
@@ -92,10 +84,9 @@ int main(int argc, char **argv) {
                 }
 
                 for(uint32_t i = 0; i < NUM_KEYS; i++) {
-                    INFO("HELLO PRESSED %d", e.key.keysym.sym);
                     if(e.key.keysym.sym == KEYMAP[i]) {
                         chip8->keypad[i] = true;
-                        INFO("KEY PRESSED %d", i);
+                        INFO("KEY PRESSED %s", SDL_GetKeyName(e.key.keysym.sym));
                     }
                 }
             }

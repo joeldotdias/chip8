@@ -36,7 +36,7 @@ typedef struct Chip8 {
     // registers
     uint8_t V[NUM_GPRS]; // GPR -> [V0 - V14], Flag reg -> V15
     uint16_t I;          // index register
-    uint16_t sp;         // stack pointer
+    uint8_t sp;          // stack pointer
     uint16_t pc;         // program counter
 
     uint8_t delay_timer;
@@ -49,6 +49,10 @@ typedef struct Chip8 {
     bool keypad[NUM_KEYS];
 
     bool needs_draw;
+
+    // timer cycle tracking
+    uint8_t delay_cycles;
+    uint8_t sound_cycles;
 } Chip8;
 
 static const uint8_t FONTSET[FONTSET_SIZE] = {
@@ -92,5 +96,6 @@ static const uint8_t KEYMAP[NUM_KEYS] = {
 Chip8 *chip8_init();
 void c8_load_rom(Chip8 *chip8, const char *rom_path);
 void c8_exec_instruction(Chip8 *chip8, bool dbg);
+void c8_tick_timers(Chip8 *chip8);
 
 #endif

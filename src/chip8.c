@@ -322,12 +322,14 @@ void c8_exec_instruction(Chip8 *chip8, bool dbg) {
                 // FX15 -> SET delay timer to VX
                 case 0x0015:
                     chip8->delay_timer = chip8->V[op_X(opcode)];
+                    chip8->delay_cycles = 0;
                     chip8->pc += 2;
                     break;
 
                 // FX18 -> SET sound timer to VX
                 case 0x0018:
                     chip8->sound_timer = chip8->V[op_X(opcode)];
+                    chip8->sound_cycles = 0;
                     chip8->pc += 2;
                     break;
 
@@ -389,5 +391,20 @@ void c8_exec_instruction(Chip8 *chip8, bool dbg) {
         default:
             // maybe SUPER-CHIP instruction
             UNIMPLEMENTED("Instruction 0x%04x", opcode);
+    }
+}
+
+void c8_tick_timers(Chip8 *chip8) {
+    if(chip8->delay_cycles >= 9) {
+        if(chip8->delay_timer > 0) {
+            chip8->delay_timer--;
+        }
+        chip8->delay_cycles = 0;
+    }
+    if(chip8->sound_cycles >= 9) {
+        if(chip8->sound_timer > 0) {
+            chip8->sound_timer--;
+        }
+        chip8->sound_cycles = 0;
     }
 }
